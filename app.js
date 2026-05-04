@@ -1,22 +1,39 @@
+const homeScreen = document.querySelector("#homeScreen");
+const gameScreen = document.querySelector("#gameScreen");
+const joinForm = document.querySelector("#joinForm");
+const createRoomButton = document.querySelector("#createRoomButton");
+const playerNameInput = document.querySelector("#playerName");
+const roomCodeInput = document.querySelector("#roomCodeInput");
+const connectionNote = document.querySelector("#connectionNote");
+const homeModeTabs = document.querySelector("#homeModeTabs");
+const roomLabel = document.querySelector("#roomLabel");
+const playerLabel = document.querySelector("#playerLabel");
+const modeLabel = document.querySelector("#modeLabel");
+const backHomeButton = document.querySelector("#backHomeButton");
+const copyRoomButton = document.querySelector("#copyRoomButton");
 const video = document.querySelector("#camera");
 const poseCanvas = document.querySelector("#poseCanvas");
 const poseCtx = poseCanvas.getContext("2d");
 const avatarCanvas = document.querySelector("#avatarCanvas");
 const avatarCtx = avatarCanvas.getContext("2d");
-const modeTabs = document.querySelector("#modeTabs");
+const homeAvatarCanvas = document.querySelector("#homeAvatarCanvas");
+const homeAvatarCtx = homeAvatarCanvas.getContext("2d");
 const startButton = document.querySelector("#startButton");
 const nextButton = document.querySelector("#nextButton");
 const audioButton = document.querySelector("#audioButton");
+const calibrateButton = document.querySelector("#calibrateButton");
 const exerciseName = document.querySelector("#exerciseName");
 const exerciseHint = document.querySelector("#exerciseHint");
 const movementIcon = document.querySelector("#movementIcon");
 const scoreEl = document.querySelector("#score");
 const coinsEl = document.querySelector("#coins");
-const accuracyEl = document.querySelector("#accuracy");
+const confidenceScoreEl = document.querySelector("#accuracy");
 const repsEl = document.querySelector("#reps");
 const timerText = document.querySelector("#timerText");
 const timerRing = document.querySelector("#timerRing");
-const cameraBadge = document.querySelector("#cameraBadge");
+const sensorStatus = document.querySelector("#sensorStatus");
+const confidenceText = document.querySelector("#confidenceText");
+const confidenceFill = document.querySelector("#confidenceFill");
 const positiveFeedback = document.querySelector("#positiveFeedback");
 const modeDescription = document.querySelector("#modeDescription");
 const avatarLevel = document.querySelector("#avatarLevel");
@@ -25,38 +42,41 @@ const levelFill = document.querySelector("#levelFill");
 const shopList = document.querySelector("#shopList");
 const skinStrip = document.querySelector("#skinStrip");
 const rankingList = document.querySelector("#rankingList");
+const onlineState = document.querySelector("#onlineState");
 const toastHost = document.querySelector("#toastHost");
 
 const ROUND_SECONDS = 60;
-const COOLDOWN_MS = 1100;
+const COOLDOWN_MS = 900;
+const CALIBRATION_MS = 2400;
 const ringLength = 2 * Math.PI * 52;
+const API_BASE = "";
 
 const modes = [
   {
     id: "run",
     name: "Corrida virtual",
-    description: "Competicao em tempo real simulada pela marcha e corrida no lugar.",
+    description: "Marcha e corrida no lugar com ranking por sala.",
     exercises: ["march", "jump", "arms"],
     scoreMultiplier: 1.2,
   },
   {
     id: "dance",
     name: "Jogo de danca",
-    description: "A camera avalia ritmo, direcao e precisao dos gestos.",
+    description: "Ritmo lateral, bracos e polichinelo adaptado.",
     exercises: ["dance", "arms", "jack"],
-    scoreMultiplier: 1.35,
+    scoreMultiplier: 1.3,
   },
   {
     id: "friends",
     name: "Desafios",
-    description: "Rodadas curtas contra amigos com ranking semanal e mensal.",
+    description: "Rodadas curtas entre colegas com ranking ao vivo.",
     exercises: ["squat", "march", "dance"],
-    scoreMultiplier: 1.45,
+    scoreMultiplier: 1.35,
   },
   {
     id: "inclusive",
     name: "Adaptado",
-    description: "Movimentos simples, ritmo mais lento, audio e feedback positivo constante.",
+    description: "Ritmo lento, instrucoes simples e movimentos de baixo impacto.",
     exercises: ["march", "arms", "dance"],
     scoreMultiplier: 1,
   },
@@ -66,42 +86,42 @@ const exerciseLibrary = {
   march: {
     icon: "1",
     name: "Marcha leve",
-    hint: "Levante um joelho por vez, sem pressa.",
-    spoken: "Marcha leve. Levante um joelho por vez. Voce pode ir devagar.",
+    hint: "Levante um joelho por vez. Conta apenas quando os joelhos alternam.",
+    spoken: "Marcha leve. Levante um joelho por vez. Faca devagar.",
     detect: detectMarch,
   },
   jump: {
     icon: "2",
     name: "Pulo pequeno",
-    hint: "Dobre um pouco os joelhos e pule baixo.",
-    spoken: "Pulo pequeno. Pule baixo e volte com calma.",
+    hint: "Pule baixo. O quadril e os ombros precisam subir juntos.",
+    spoken: "Pulo pequeno. Pule baixo. O corpo precisa subir junto.",
     detect: detectJump,
   },
   jack: {
     icon: "3",
     name: "Polichinelo adaptado",
-    hint: "Abra bracos e pernas. Se preferir, abra so os bracos.",
-    spoken: "Polichinelo adaptado. Abra bracos e pernas, ou apenas os bracos.",
+    hint: "Abra os bracos acima dos ombros. No modo danca, abrir as pernas melhora a pontuacao.",
+    spoken: "Polichinelo adaptado. Abra os bracos acima dos ombros.",
     detect: detectJumpingJack,
   },
   squat: {
     icon: "4",
     name: "Agachamento simples",
-    hint: "Sente no ar um pouquinho e suba de novo.",
-    spoken: "Agachamento simples. Baixe um pouco o corpo e suba de novo.",
+    hint: "Baixe o quadril e volte. Conta quando o corpo realmente desce.",
+    spoken: "Agachamento simples. Baixe o quadril e volte com calma.",
     detect: detectSquat,
   },
   dance: {
     icon: "5",
     name: "Danca lateral",
-    hint: "Balance o corpo para um lado e depois para o outro.",
+    hint: "Leve o tronco para um lado e depois para o outro.",
     spoken: "Danca lateral. Balance para um lado e depois para o outro.",
     detect: detectDance,
   },
   arms: {
     icon: "6",
     name: "Bracos para cima",
-    hint: "Levante as duas maos acima da cabeca.",
+    hint: "Levante as duas maos acima da cabeca e depois abaixe.",
     spoken: "Bracos para cima. Levante as duas maos acima da cabeca.",
     detect: detectArmsUp,
   },
@@ -109,27 +129,10 @@ const exerciseLibrary = {
 
 const rewards = [
   { id: "starter", type: "Roupa", name: "Treino", color: "#5fe0b8", price: 0, owned: true },
-  { id: "sun", type: "Roupa", name: "Energia solar", color: "#ffd35a", price: 40, owned: false },
-  { id: "beat", type: "Roupa", name: "Danca pop", color: "#ff7d73", price: 70, owned: false },
+  { id: "sun", type: "Roupa", name: "Solar", color: "#ffd35a", price: 40, owned: false },
+  { id: "beat", type: "Roupa", name: "Danca", color: "#ff7d73", price: 70, owned: false },
   { id: "focus", type: "Habilidade", name: "Ritmo lento", color: "#8eb6ff", price: 95, owned: false },
-  { id: "team", type: "Desafio", name: "Duelo amigo", color: "#b8f060", price: 130, owned: false },
-  { id: "star", type: "Roupa", name: "Campeao", color: "#d9a7ff", price: 170, owned: false },
-];
-
-const baseRanking = [
-  { name: "Ana", score: 1240 },
-  { name: "Leo", score: 980 },
-  { name: "Mila", score: 760 },
-  { name: "Voce", score: 0 },
-  { name: "Rafa", score: 420 },
-];
-
-const goodFeedback = [
-  "Muito bem. Continue no seu ritmo.",
-  "Excelente movimento. Seu avatar ficou mais forte.",
-  "Boa tentativa. Cada movimento conta.",
-  "Mandou bem. Vamos para o proximo passo com calma.",
-  "Otimo. Seu corpo foi reconhecido pela camera.",
+  { id: "star", type: "Roupa", name: "Campeao", color: "#d9a7ff", price: 160, owned: false },
 ];
 
 let pose;
@@ -139,16 +142,154 @@ let currentExerciseIndex = 0;
 let score = 0;
 let coins = 0;
 let reps = 0;
-let attempts = 0;
 let lastRepAt = 0;
 let roundStartedAt = 0;
 let history = [];
 let gameRunning = false;
 let selectedReward = rewards[0];
 let phase = {};
+let baseline = null;
+let calibration = { active: false, startedAt: 0, samples: [] };
+let lastPoseQuality = { valid: false, confidence: 0, reason: "Aguardando camera" };
+let players = [];
+let session = {
+  playerId: "",
+  playerName: "",
+  roomCode: "",
+  online: false,
+  eventSource: null,
+};
+let syncTimer = 0;
 
 timerRing.style.strokeDasharray = `${ringLength}`;
 timerRing.style.strokeDashoffset = "0";
+
+function renderModeTabs() {
+  homeModeTabs.innerHTML = "";
+  modes.forEach((mode) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `mode-tab${mode.id === selectedMode.id ? " active" : ""}`;
+    button.innerHTML = `<strong>${mode.name}</strong><br><span>${mode.description}</span>`;
+    button.addEventListener("click", () => {
+      selectedMode = mode;
+      renderModeTabs();
+      renderCurrentExercise();
+    });
+    homeModeTabs.append(button);
+  });
+}
+
+async function enterGame(createNewRoom) {
+  const playerName = cleanName(playerNameInput.value);
+  if (!playerName) {
+    showToast("Digite seu nome para entrar.");
+    playerNameInput.focus();
+    return;
+  }
+
+  const requestedRoom = createNewRoom ? "" : cleanRoom(roomCodeInput.value);
+  session.playerName = playerName;
+  session.roomCode = requestedRoom || createRoomCode();
+  session.playerId = getOrCreatePlayerId();
+
+  await joinOnlineRoom(requestedRoom, playerName);
+  showGameScreen();
+  syncScoreNow();
+}
+
+async function joinOnlineRoom(requestedRoom, playerName) {
+  try {
+    const response = await fetch(`${API_BASE}/api/room/join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomCode: requestedRoom,
+        playerId: session.playerId,
+        name: playerName,
+        mode: selectedMode.name,
+      }),
+    });
+    if (!response.ok) throw new Error("room join failed");
+    const data = await response.json();
+    session.roomCode = data.roomCode;
+    session.playerId = data.playerId;
+    session.online = true;
+    players = data.players || [];
+    connectRoomEvents();
+  } catch (_error) {
+    session.online = false;
+    players = [{ id: session.playerId, name: playerName, score: 0, reps: 0, mode: selectedMode.name }];
+    connectionNote.textContent = "Sem backend online nesta origem. O ranking fica local ate publicar no Render.";
+  }
+}
+
+function showGameScreen() {
+  homeScreen.classList.add("hidden");
+  gameScreen.classList.remove("hidden");
+  roomLabel.textContent = session.roomCode;
+  playerLabel.textContent = session.playerName;
+  modeLabel.textContent = selectedMode.name;
+  onlineState.textContent = session.online ? "online" : "local";
+  onlineState.classList.toggle("online", session.online);
+  currentExerciseIndex = 0;
+  roundStartedAt = performance.now();
+  renderCurrentExercise();
+  updateHud();
+  resizeCanvas();
+}
+
+function connectRoomEvents() {
+  if (session.eventSource) session.eventSource.close();
+  session.eventSource = new EventSource(`${API_BASE}/api/room/${session.roomCode}/events?playerId=${session.playerId}`);
+  session.eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    players = data.players || [];
+    renderRanking();
+  };
+  session.eventSource.onerror = () => {
+    onlineState.textContent = "reconectando";
+    onlineState.classList.remove("online");
+  };
+}
+
+function syncScoreSoon() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncScoreNow, 450);
+}
+
+async function syncScoreNow() {
+  const ownPlayer = {
+    id: session.playerId,
+    name: session.playerName || "Voce",
+    score,
+    reps,
+    mode: selectedMode.name,
+  };
+
+  players = upsertPlayer(players, ownPlayer);
+  renderRanking();
+
+  if (!session.online) return;
+  try {
+    await fetch(`${API_BASE}/api/score`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomCode: session.roomCode,
+        playerId: session.playerId,
+        name: session.playerName,
+        score,
+        reps,
+        mode: selectedMode.name,
+      }),
+    });
+  } catch (_error) {
+    session.online = false;
+    onlineState.textContent = "local";
+    onlineState.classList.remove("online");
+  }
+}
 
 function resizeCanvas() {
   const rect = poseCanvas.getBoundingClientRect();
@@ -166,8 +307,8 @@ function setupPose() {
     modelComplexity: 1,
     smoothLandmarks: true,
     enableSegmentation: false,
-    minDetectionConfidence: 0.55,
-    minTrackingConfidence: 0.55,
+    minDetectionConfidence: 0.72,
+    minTrackingConfidence: 0.72,
   });
   pose.onResults(onPoseResults);
 }
@@ -175,24 +316,29 @@ function setupPose() {
 async function startCamera() {
   startButton.disabled = true;
   startButton.textContent = "Carregando...";
-
   if (!pose) setupPose();
 
   camera = new Camera(video, {
     onFrame: async () => {
       await pose.send({ image: video });
     },
-    width: 960,
+    width: 1280,
     height: 720,
   });
 
   await camera.start();
-  gameRunning = true;
-  roundStartedAt = performance.now();
+  startCalibration();
   startButton.textContent = "Camera ligada";
-  cameraBadge.classList.add("hidden");
+  startButton.disabled = false;
   speakCurrentExercise();
-  showToast("Camera ligada. Vamos com calma e no seu ritmo.");
+}
+
+function startCalibration() {
+  calibration = { active: true, startedAt: performance.now(), samples: [] };
+  baseline = null;
+  gameRunning = false;
+  sensorStatus.textContent = "Calibrando: fique parado, de corpo inteiro, por alguns segundos.";
+  positiveFeedback.textContent = "Calibrando. Nao vou contar pontos ainda.";
 }
 
 function onPoseResults(results) {
@@ -204,53 +350,144 @@ function onPoseResults(results) {
   poseCtx.drawImage(results.image, 0, 0, width, height);
 
   if (results.poseLandmarks) {
-    drawConnectors(poseCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: "#5fe0b8", lineWidth: 4 });
-    drawLandmarks(poseCtx, results.poseLandmarks, { color: "#ffd35a", lineWidth: 2, radius: 3 });
-    pushHistory(results.poseLandmarks);
-    if (gameRunning) evaluateMove(results.poseLandmarks);
+    const quality = analyzePose(results.poseLandmarks);
+    lastPoseQuality = quality;
+    drawPose(results.poseLandmarks, quality);
+    updateSensorPanel(quality);
+
+    if (quality.valid) {
+      const features = makeFeatures(results.poseLandmarks, quality);
+      pushHistory(features);
+      handleCalibration(features);
+      if (gameRunning && baseline) evaluateMove(features, quality);
+    }
+  } else {
+    lastPoseQuality = { valid: false, confidence: 0, reason: "Nenhum corpo detectado." };
+    updateSensorPanel(lastPoseQuality);
   }
+
   poseCtx.restore();
 }
 
-function pushHistory(landmarks) {
-  const now = performance.now();
-  const snapshot = {
-    t: now,
-    noseY: landmarks[0].y,
-    leftWristY: landmarks[15].y,
-    rightWristY: landmarks[16].y,
-    leftKneeY: landmarks[25].y,
-    rightKneeY: landmarks[26].y,
-    shoulderY: avg(landmarks[11].y, landmarks[12].y),
-    hipY: avg(landmarks[23].y, landmarks[24].y),
-    centerX: avg(landmarks[11].x, landmarks[12].x, landmarks[23].x, landmarks[24].x),
-  };
-  history.push(snapshot);
-  history = history.filter((item) => now - item.t < 1800);
+function analyzePose(landmarks) {
+  const required = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+  const visibleCount = required.filter((index) => isVisible(landmarks[index])).length;
+  const confidence = Math.round((visibleCount / required.length) * 100);
+  const shoulders = distance(landmarks[11], landmarks[12]);
+  const hips = distance(landmarks[23], landmarks[24]);
+  const torso = distance(midpoint(landmarks[11], landmarks[12]), midpoint(landmarks[23], landmarks[24]));
+  const bodyInFrame = required.every((index) => {
+    const point = landmarks[index];
+    return point.x > 0.02 && point.x < 0.98 && point.y > 0.02 && point.y < 0.99;
+  });
+
+  if (confidence < 92) return { valid: false, confidence, reason: "Mostre cabeca, bracos, quadril, joelhos e pes." };
+  if (!bodyInFrame) return { valid: false, confidence, reason: "Afaste a camera: parte do corpo saiu da tela." };
+  if (shoulders < 0.07 || hips < 0.05 || torso < 0.12) return { valid: false, confidence, reason: "Corpo muito longe ou pose instavel." };
+  return { valid: true, confidence, reason: "Corpo inteiro reconhecido.", shoulders, hips, torso };
 }
 
-function evaluateMove(landmarks) {
-  const now = performance.now();
-  updateTimer(now);
-  attempts += 1;
+function makeFeatures(landmarks, quality) {
+  const shoulder = midpoint(landmarks[11], landmarks[12]);
+  const hip = midpoint(landmarks[23], landmarks[24]);
+  const knee = midpoint(landmarks[25], landmarks[26]);
+  const ankle = midpoint(landmarks[27], landmarks[28]);
+  const legLength = avg(
+    distance(landmarks[23], landmarks[25]) + distance(landmarks[25], landmarks[27]),
+    distance(landmarks[24], landmarks[26]) + distance(landmarks[26], landmarks[28]),
+  );
+  return {
+    t: performance.now(),
+    landmarks,
+    confidence: quality.confidence,
+    shoulderX: shoulder.x,
+    shoulderY: shoulder.y,
+    hipX: hip.x,
+    hipY: hip.y,
+    kneeY: knee.y,
+    ankleY: ankle.y,
+    centerX: avg(shoulder.x, hip.x),
+    leftKneeY: landmarks[25].y,
+    rightKneeY: landmarks[26].y,
+    leftWristY: landmarks[15].y,
+    rightWristY: landmarks[16].y,
+    leftWristX: landmarks[15].x,
+    rightWristX: landmarks[16].x,
+    leftAnkleX: landmarks[27].x,
+    rightAnkleX: landmarks[28].x,
+    noseY: landmarks[0].y,
+    shoulderWidth: quality.shoulders,
+    torsoLength: quality.torso,
+    legLength,
+    ankleSpread: Math.abs(landmarks[27].x - landmarks[28].x),
+  };
+}
 
-  if (now - lastRepAt < COOLDOWN_MS) {
-    updateHud();
-    return;
-  }
+function handleCalibration(features) {
+  if (!calibration.active) return;
+  calibration.samples.push(features);
+  const elapsed = performance.now() - calibration.startedAt;
+  const percent = Math.min(100, Math.round((elapsed / CALIBRATION_MS) * 100));
+  sensorStatus.textContent = `Calibrando corpo: ${percent}%`;
 
-  const exercise = currentExercise();
-  if (exercise.detect(landmarks, history)) {
-    lastRepAt = now;
+  if (elapsed < CALIBRATION_MS || calibration.samples.length < 24) return;
+
+  baseline = averageFeatures(calibration.samples);
+  calibration.active = false;
+  gameRunning = true;
+  roundStartedAt = performance.now();
+  history = [];
+  phase = {};
+  sensorStatus.textContent = "Calibrado. Agora os pontos contam apenas com movimento confirmado.";
+  positiveFeedback.textContent = "Pronto. Movimento real vale ponto; pose fraca nao vale.";
+  showToast("Calibracao concluida. Pode jogar.");
+}
+
+function averageFeatures(samples) {
+  const fields = [
+    "shoulderY",
+    "hipY",
+    "kneeY",
+    "ankleY",
+    "centerX",
+    "leftKneeY",
+    "rightKneeY",
+    "leftWristY",
+    "rightWristY",
+    "shoulderWidth",
+    "torsoLength",
+    "legLength",
+    "ankleSpread",
+  ];
+  const result = {};
+  fields.forEach((field) => {
+    result[field] = avg(...samples.map((sample) => sample[field]));
+  });
+  return result;
+}
+
+function pushHistory(features) {
+  history.push(features);
+  history = history.filter((item) => features.t - item.t < 1800);
+}
+
+function evaluateMove(features, quality) {
+  updateTimer(features.t);
+  if (features.t - lastRepAt < COOLDOWN_MS) return;
+
+  const movementQuality = currentExercise().detect(features, history);
+  if (movementQuality > 0) {
+    lastRepAt = features.t;
     reps += 1;
-    const precision = Math.min(100, Math.round(62 + reps * 3 + selectedMode.scoreMultiplier * 8));
-    const gained = Math.round((12 + precision / 10) * selectedMode.scoreMultiplier);
+    const verifiedQuality = clamp(movementQuality * (quality.confidence / 100), 0.1, 1);
+    const gained = Math.round((10 + verifiedQuality * 16) * selectedMode.scoreMultiplier);
     score += gained;
     coins += Math.max(2, Math.ceil(gained / 5));
-    phase = { ...phase, hitAt: now };
-    positiveFeedback.textContent = goodFeedback[reps % goodFeedback.length];
+    phase = { ...phase, hitAt: features.t };
+    positiveFeedback.textContent = `Movimento confirmado com ${Math.round(verifiedQuality * 100)}% de confianca.`;
     updateHud();
-    showToast(`+${gained} pontos. ${positiveFeedback.textContent}`);
+    syncScoreSoon();
+    showToast(`+${gained} pontos para ${session.playerName || "voce"}.`);
   }
 }
 
@@ -259,10 +496,7 @@ function updateTimer(now) {
   const left = Math.max(0, ROUND_SECONDS - elapsed);
   timerText.textContent = Math.ceil(left);
   timerRing.style.strokeDashoffset = `${ringLength * (1 - left / ROUND_SECONDS)}`;
-
-  if (left <= 0) {
-    nextExercise();
-  }
+  if (left <= 0) nextExercise();
 }
 
 function currentExercise() {
@@ -275,35 +509,9 @@ function nextExercise() {
   roundStartedAt = performance.now();
   lastRepAt = 0;
   phase = {};
+  history = [];
   renderCurrentExercise();
   speakCurrentExercise();
-  updateHud();
-}
-
-function selectMode(modeId) {
-  selectedMode = modes.find((mode) => mode.id === modeId) || modes[3];
-  currentExerciseIndex = 0;
-  phase = {};
-  roundStartedAt = performance.now();
-  modeDescription.textContent = selectedMode.description;
-  positiveFeedback.textContent = selectedMode.id === "inclusive"
-    ? "Voce consegue. Vamos devagar."
-    : "Prepare-se para a rodada.";
-  renderModes();
-  renderCurrentExercise();
-  updateHud();
-}
-
-function renderModes() {
-  modeTabs.innerHTML = "";
-  modes.forEach((mode) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `mode-tab${mode.id === selectedMode.id ? " active" : ""}`;
-    button.textContent = mode.name;
-    button.addEventListener("click", () => selectMode(mode.id));
-    modeTabs.append(button);
-  });
 }
 
 function renderCurrentExercise() {
@@ -311,6 +519,7 @@ function renderCurrentExercise() {
   movementIcon.textContent = exercise.icon;
   exerciseName.textContent = exercise.name;
   exerciseHint.textContent = exercise.hint;
+  modeDescription.textContent = selectedMode.description;
 }
 
 function speakCurrentExercise() {
@@ -319,7 +528,6 @@ function speakCurrentExercise() {
     showToast("Audio indisponivel neste navegador.");
     return;
   }
-
   synth.cancel();
   const utterance = new SpeechSynthesisUtterance(currentExercise().spoken);
   utterance.lang = "pt-BR";
@@ -327,102 +535,93 @@ function speakCurrentExercise() {
   synth.speak(utterance);
 }
 
-function detectMarch(_landmarks, frames) {
-  if (frames.length < 10) return false;
-  const knees = frames.map((frame) => Math.abs(frame.leftKneeY - frame.rightKneeY));
-  const kneeLift = Math.max(...knees) - Math.min(...knees);
-  const recent = knees[knees.length - 1];
-  if (kneeLift > 0.035 && recent > 0.035 && !phase.marchStep) {
-    phase.marchStep = true;
-    return true;
+function detectMarch(features) {
+  const kneeDelta = Math.abs(features.leftKneeY - features.rightKneeY);
+  const side = features.leftKneeY < features.rightKneeY ? "left" : "right";
+  const threshold = baseline.legLength * 0.085;
+  if (kneeDelta > threshold && phase.marchSide !== side) {
+    phase.marchSide = side;
+    return clamp(kneeDelta / (baseline.legLength * 0.18), 0.45, 1);
   }
-  if (recent < 0.018) phase.marchStep = false;
-  return false;
+  return 0;
 }
 
-function detectJump(_landmarks, frames) {
-  if (frames.length < 8) return false;
-  const highest = Math.min(...frames.map((frame) => frame.hipY));
-  const lowest = Math.max(...frames.map((frame) => frame.hipY));
-  const lifted = lowest - highest > 0.04;
-  if (lifted && frames[frames.length - 1].hipY < highest + 0.018 && !phase.jumpUp) {
+function detectJump(features, frames) {
+  const hipLift = baseline.hipY - features.hipY;
+  const shoulderLift = baseline.shoulderY - features.shoulderY;
+  const threshold = baseline.legLength * 0.07;
+  const upTogether = hipLift > threshold && shoulderLift > baseline.torsoLength * 0.05;
+  if (upTogether && !phase.jumpUp) {
     phase.jumpUp = true;
-    return true;
+    return clamp((hipLift + shoulderLift) / (baseline.legLength * 0.24), 0.5, 1);
   }
-  if (frames[frames.length - 1].hipY > lowest - 0.015) phase.jumpUp = false;
-  return false;
+  const returned = frames.length > 4 && features.hipY > baseline.hipY - baseline.legLength * 0.025;
+  if (returned) phase.jumpUp = false;
+  return 0;
 }
 
-function detectJumpingJack(landmarks) {
-  const leftWrist = landmarks[15];
-  const rightWrist = landmarks[16];
-  const leftShoulder = landmarks[11];
-  const rightShoulder = landmarks[12];
-  const leftAnkle = landmarks[27];
-  const rightAnkle = landmarks[28];
-  const handsHigh = leftWrist.y < leftShoulder.y && rightWrist.y < rightShoulder.y;
-  const handsWide = Math.abs(leftWrist.x - rightWrist.x) > 0.34;
-  const legsWide = Math.abs(leftAnkle.x - rightAnkle.x) > 0.22;
-  const adaptedOpen = handsHigh && handsWide;
-  const fullOpen = adaptedOpen && legsWide;
-
-  if ((adaptedOpen || fullOpen) && !phase.jackOpen) {
+function detectJumpingJack(features) {
+  const handsHigh = features.leftWristY < features.shoulderY && features.rightWristY < features.shoulderY;
+  const handsWide = Math.abs(features.leftWristX - features.rightWristX) > baseline.shoulderWidth * 1.65;
+  const legsOpen = features.ankleSpread > baseline.ankleSpread + baseline.shoulderWidth * 0.38;
+  const open = handsHigh && handsWide;
+  if (open && !phase.jackOpen) {
     phase.jackOpen = true;
-    return true;
+    return legsOpen ? 1 : 0.68;
   }
-  if (!adaptedOpen && phase.jackOpen) phase.jackOpen = false;
-  return false;
+  if (!open) phase.jackOpen = false;
+  return 0;
 }
 
-function detectSquat(landmarks) {
-  const hipY = avg(landmarks[23].y, landmarks[24].y);
-  const kneeY = avg(landmarks[25].y, landmarks[26].y);
-  const ankleY = avg(landmarks[27].y, landmarks[28].y);
-  const squatDepth = (hipY - kneeY) / Math.max(0.05, ankleY - kneeY);
-  const down = squatDepth > 0.28;
+function detectSquat(features) {
+  const hipDrop = features.hipY - baseline.hipY;
+  const shoulderDrop = features.shoulderY - baseline.shoulderY;
+  const down = hipDrop > baseline.legLength * 0.09 && shoulderDrop > baseline.torsoLength * 0.035;
   if (down && !phase.squatDown) {
     phase.squatDown = true;
-    return true;
+    return clamp(hipDrop / (baseline.legLength * 0.18), 0.55, 1);
   }
-  if (!down && phase.squatDown) phase.squatDown = false;
-  return false;
+  if (features.hipY < baseline.hipY + baseline.legLength * 0.035) phase.squatDown = false;
+  return 0;
 }
 
-function detectDance(_landmarks, frames) {
-  if (frames.length < 12) return false;
-  const xs = frames.map((frame) => frame.centerX);
-  const sway = Math.max(...xs) - Math.min(...xs);
-  const latest = xs[xs.length - 1];
-  const direction = latest > xs[Math.max(0, xs.length - 6)] ? "direita" : "esquerda";
-  if (sway > 0.045 && phase.lastDanceDirection && phase.lastDanceDirection !== direction) {
-    phase.lastDanceDirection = direction;
-    return true;
+function detectDance(features) {
+  const shift = features.centerX - baseline.centerX;
+  const side = shift > 0 ? "right" : "left";
+  const amount = Math.abs(shift);
+  const threshold = baseline.shoulderWidth * 0.28;
+  if (amount > threshold && phase.danceSide && phase.danceSide !== side) {
+    phase.danceSide = side;
+    return clamp(amount / (baseline.shoulderWidth * 0.55), 0.5, 1);
   }
-  phase.lastDanceDirection = direction;
-  return false;
+  if (amount > threshold) phase.danceSide = side;
+  return 0;
 }
 
-function detectArmsUp(landmarks) {
-  const nose = landmarks[0];
-  const leftWrist = landmarks[15];
-  const rightWrist = landmarks[16];
-  const up = leftWrist.y < nose.y && rightWrist.y < nose.y;
-  if (up && !phase.armsUp) {
+function detectArmsUp(features) {
+  const bothUp = features.leftWristY < features.noseY && features.rightWristY < features.noseY;
+  if (bothUp && !phase.armsUp) {
     phase.armsUp = true;
-    return true;
+    return 1;
   }
-  if (!up && phase.armsUp) phase.armsUp = false;
-  return false;
+  if (features.leftWristY > features.shoulderY && features.rightWristY > features.shoulderY) {
+    phase.armsUp = false;
+  }
+  return 0;
+}
+
+function updateSensorPanel(quality) {
+  confidenceText.textContent = `${quality.confidence}%`;
+  confidenceFill.style.width = `${quality.confidence}%`;
+  confidenceScoreEl.textContent = `${quality.confidence}%`;
+  if (!calibration.active) sensorStatus.textContent = quality.reason;
 }
 
 function updateHud() {
-  const level = Math.floor(score / 180) + 1;
-  const levelProgress = Math.min(100, Math.round((score % 180) / 180 * 100));
-  const accuracy = attempts ? Math.min(100, Math.round((reps / Math.max(1, attempts / 26)) * 100)) : 0;
-
+  const level = Math.floor(score / 200) + 1;
+  const levelProgress = Math.min(100, Math.round(((score % 200) / 200) * 100));
   scoreEl.textContent = score;
   coinsEl.textContent = coins;
-  accuracyEl.textContent = `${accuracy}%`;
   repsEl.textContent = reps;
   avatarLevel.textContent = `Nivel ${level} - ${levelTitle(level)}`;
   levelFill.style.width = `${levelProgress}%`;
@@ -431,26 +630,22 @@ function updateHud() {
   renderSkins();
 }
 
-function levelTitle(level) {
-  if (level >= 8) return "Campeao ativo";
-  if (level >= 5) return "Explorador em movimento";
-  if (level >= 3) return "Corpo acordado";
-  return "Comecando";
-}
-
 function renderRanking() {
-  const ranking = baseRanking
-    .map((player) => player.name === "Voce" ? { ...player, score } : player)
-    .sort((a, b) => b.score - a.score);
-  const userPosition = ranking.findIndex((player) => player.name === "Voce") + 1;
-  weeklyRank.textContent = `Semana: ${userPosition}o`;
+  const ranking = [...players].sort((a, b) => b.score - a.score);
+  const ownIndex = ranking.findIndex((player) => player.id === session.playerId);
+  weeklyRank.textContent = ownIndex >= 0 ? `Sala: ${ownIndex + 1}o` : "Sala: --";
   rankingList.innerHTML = "";
 
-  ranking.slice(0, 5).forEach((player, index) => {
+  if (!ranking.length) {
+    rankingList.innerHTML = "<li><div class=\"ranking-pos\">1</div><div><strong>Aguardando</strong><span>Entre em uma sala</span></div><strong>0</strong></li>";
+    return;
+  }
+
+  ranking.slice(0, 8).forEach((player, index) => {
     const item = document.createElement("li");
     item.innerHTML = `
       <div class="ranking-pos">${index + 1}</div>
-      <div><strong>${player.name}</strong><span>${player.name === "Voce" ? "Seu desafio atual" : "Amigo"}</span></div>
+      <div><strong>${escapeHtml(player.name)}</strong><span>${escapeHtml(player.mode || "Jogando")}</span></div>
       <strong>${player.score}</strong>
     `;
     rankingList.append(item);
@@ -499,76 +694,179 @@ function buyOrUseReward(reward) {
     reward.owned = true;
     showToast(`${reward.name} desbloqueado.`);
   }
-
-  if (reward.type === "Habilidade" && reward.id === "focus") {
-    positiveFeedback.textContent = "Ritmo lento ativado. Voce pode fazer cada gesto com mais tempo.";
-  }
-  selectedReward = reward.type === "Roupa" ? reward : selectedReward;
+  if (reward.type === "Roupa") selectedReward = reward;
+  if (reward.id === "focus") positiveFeedback.textContent = "Ritmo lento ativado.";
   updateHud();
 }
 
-function drawAvatar() {
-  const w = avatarCanvas.width;
-  const h = avatarCanvas.height;
-  avatarCtx.clearRect(0, 0, w, h);
-  avatarCtx.fillStyle = "#141812";
-  avatarCtx.fillRect(0, 0, w, h);
-
-  const t = performance.now() / 1000;
-  const hitPulse = phase.hitAt ? Math.max(0, 1 - (performance.now() - phase.hitAt) / 420) : 0;
-  const level = Math.floor(score / 180) + 1;
-  const bounce = Math.sin(t * 3.2) * 3 - hitPulse * 10;
-  const skin = selectedReward.color;
-  const x = w / 2;
-  const y = h * 0.5 + bounce;
-  const power = Math.min(18, level * 1.8);
-
-  avatarCtx.fillStyle = "rgba(95, 224, 184, 0.1)";
-  avatarCtx.beginPath();
-  avatarCtx.ellipse(x, h - 42, 86 + power * 2, 18, 0, 0, Math.PI * 2);
-  avatarCtx.fill();
-
-  avatarCtx.lineCap = "round";
-  avatarCtx.lineJoin = "round";
-  avatarCtx.strokeStyle = skin;
-  avatarCtx.lineWidth = 18 + Math.min(6, level);
-
-  line(x, y - 72, x, y + 58);
-  line(x - 8, y - 22, x - 78, y + Math.sin(t * 2.4) * 18 - hitPulse * 12);
-  line(x + 8, y - 22, x + 78, y + Math.cos(t * 2.4) * 18 - hitPulse * 12);
-  line(x - 8, y + 54, x - 60, y + 142);
-  line(x + 8, y + 54, x + 60, y + 142);
-
-  avatarCtx.fillStyle = skin;
-  avatarCtx.beginPath();
-  avatarCtx.arc(x, y - 114, 39 + hitPulse * 4, 0, Math.PI * 2);
-  avatarCtx.fill();
-
-  avatarCtx.fillStyle = "#10140f";
-  avatarCtx.beginPath();
-  avatarCtx.arc(x - 13, y - 120, 4, 0, Math.PI * 2);
-  avatarCtx.arc(x + 13, y - 120, 4, 0, Math.PI * 2);
-  avatarCtx.fill();
-
-  avatarCtx.strokeStyle = "#fffaf0";
-  avatarCtx.lineWidth = 5;
-  avatarCtx.beginPath();
-  avatarCtx.arc(x, y - 108, 14, 0.15, Math.PI - 0.15);
-  avatarCtx.stroke();
-
-  avatarCtx.fillStyle = "#ffd35a";
-  avatarCtx.font = "900 22px Inter, sans-serif";
-  avatarCtx.textAlign = "center";
-  avatarCtx.fillText(`NV ${level}`, x, 34);
-
-  requestAnimationFrame(drawAvatar);
+function drawPose(landmarks, quality) {
+  const color = quality.valid ? "#5fe0b8" : "#ff7d73";
+  drawConnectors(poseCtx, landmarks, POSE_CONNECTIONS, { color, lineWidth: quality.valid ? 4 : 2 });
+  drawLandmarks(poseCtx, landmarks, { color: "#ffd35a", lineWidth: 2, radius: quality.valid ? 3 : 2 });
 }
 
-function line(x1, y1, x2, y2) {
-  avatarCtx.beginPath();
-  avatarCtx.moveTo(x1, y1);
-  avatarCtx.lineTo(x2, y2);
-  avatarCtx.stroke();
+function drawAvatarLoop() {
+  drawHumanAvatar(avatarCtx, avatarCanvas, selectedReward.color, score, phase.hitAt || 0);
+  drawHumanAvatar(homeAvatarCtx, homeAvatarCanvas, "#5fe0b8", 280, 0);
+  requestAnimationFrame(drawAvatarLoop);
+}
+
+function drawHumanAvatar(ctx, canvas, outfitColor, avatarScore, hitAt) {
+  const w = canvas.width;
+  const h = canvas.height;
+  const t = performance.now() / 1000;
+  const pulse = hitAt ? Math.max(0, 1 - (performance.now() - hitAt) / 420) : 0;
+  const level = Math.floor(avatarScore / 200) + 1;
+  const x = w / 2;
+  const y = h * 0.5 + Math.sin(t * 2.6) * 3 - pulse * 8;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#141912";
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = "rgba(95, 224, 184, 0.1)";
+  ctx.beginPath();
+  ctx.ellipse(x, h - 38, 110, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const skin = "#d7a77c";
+  const shade = "#b98562";
+  const pants = "#26344f";
+  const shoe = "#10140f";
+
+  capsule(ctx, x - 42, y + 56, x - 62, y + 150, 28, pants);
+  capsule(ctx, x + 42, y + 56, x + 62, y + 150, 28, pants);
+  capsule(ctx, x - 62, y + 150, x - 76, y + 194, 24, skin);
+  capsule(ctx, x + 62, y + 150, x + 76, y + 194, 24, skin);
+  capsule(ctx, x - 78, y + 198, x - 42, y + 200, 18, shoe);
+  capsule(ctx, x + 42, y + 200, x + 78, y + 198, 18, shoe);
+
+  ctx.fillStyle = outfitColor;
+  ctx.beginPath();
+  ctx.moveTo(x - 74, y - 54);
+  ctx.quadraticCurveTo(x - 42, y - 82, x, y - 74);
+  ctx.quadraticCurveTo(x + 42, y - 82, x + 74, y - 54);
+  ctx.lineTo(x + 50, y + 64);
+  ctx.quadraticCurveTo(x, y + 88, x - 50, y + 64);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255,255,255,0.16)";
+  ctx.beginPath();
+  ctx.ellipse(x, y - 8, 26 + level, 54, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  capsule(ctx, x - 78, y - 46, x - 118, y + 32 - pulse * 28, 24, skin);
+  capsule(ctx, x + 78, y - 46, x + 118, y + 32 - pulse * 28, 24, skin);
+  capsule(ctx, x - 118, y + 32 - pulse * 28, x - 122, y + 92 - pulse * 32, 22, shade);
+  capsule(ctx, x + 118, y + 32 - pulse * 28, x + 122, y + 92 - pulse * 32, 22, shade);
+
+  ctx.fillStyle = skin;
+  roundedRect(ctx, x - 22, y - 104, 44, 42, 18);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y - 128, 42, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#2d2018";
+  ctx.beginPath();
+  ctx.ellipse(x, y - 150, 46, 24, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#151914";
+  ctx.beginPath();
+  ctx.arc(x - 14, y - 132, 4, 0, Math.PI * 2);
+  ctx.arc(x + 14, y - 132, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#fffaf0";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(x, y - 118, 14, 0.16, Math.PI - 0.16);
+  ctx.stroke();
+
+  ctx.fillStyle = "#ffd35a";
+  ctx.font = "900 22px Inter, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(`NV ${level}`, x, 34);
+}
+
+function capsule(ctx, x1, y1, x2, y2, width, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function isVisible(point) {
+  return point && (point.visibility === undefined || point.visibility >= 0.68);
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function midpoint(a, b) {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+function avg(...values) {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function cleanName(value) {
+  return value.trim().replace(/\s+/g, " ").slice(0, 24);
+}
+
+function cleanRoom(value) {
+  return value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+}
+
+function createRoomCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function getOrCreatePlayerId() {
+  const stored = localStorage.getItem("moveQuestPlayerId");
+  if (stored) return stored;
+  const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  localStorage.setItem("moveQuestPlayerId", id);
+  return id;
+}
+
+function upsertPlayer(list, player) {
+  const map = new Map(list.map((item) => [item.id, item]));
+  map.set(player.id, { ...(map.get(player.id) || {}), ...player });
+  return [...map.values()];
+}
+
+function levelTitle(level) {
+  if (level >= 8) return "Campeao ativo";
+  if (level >= 5) return "Explorador em movimento";
+  if (level >= 3) return "Corpo acordado";
+  return "Comecando";
 }
 
 function showToast(message) {
@@ -576,13 +874,25 @@ function showToast(message) {
   toast.className = "toast";
   toast.textContent = message;
   toastHost.append(toast);
-  setTimeout(() => toast.remove(), 3000);
+  setTimeout(() => toast.remove(), 3200);
 }
 
-function avg(...values) {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#039;",
+  })[char]);
 }
 
+joinForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  enterGame(false);
+});
+
+createRoomButton.addEventListener("click", () => enterGame(true));
 startButton.addEventListener("click", () => {
   startCamera().catch((error) => {
     startButton.disabled = false;
@@ -591,13 +901,24 @@ startButton.addEventListener("click", () => {
     console.error(error);
   });
 });
-
 nextButton.addEventListener("click", nextExercise);
 audioButton.addEventListener("click", speakCurrentExercise);
+calibrateButton.addEventListener("click", startCalibration);
+backHomeButton.addEventListener("click", () => {
+  gameScreen.classList.add("hidden");
+  homeScreen.classList.remove("hidden");
+});
+copyRoomButton.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(session.roomCode);
+    showToast("Codigo da sala copiado.");
+  } catch (_error) {
+    showToast(`Sala: ${session.roomCode}`);
+  }
+});
 window.addEventListener("resize", resizeCanvas);
 
-renderModes();
+renderModeTabs();
 renderCurrentExercise();
-selectMode("inclusive");
 updateHud();
-drawAvatar();
+drawAvatarLoop();
