@@ -84,6 +84,7 @@ p {
 .home-preview,
 .join-panel,
 .game-header,
+.play-guide,
 .sensor-panel,
 .movement-panel,
 .avatar-zone,
@@ -262,9 +263,120 @@ input {
 
 .camera-column {
   display: grid;
-  grid-template-rows: minmax(520px, calc(100vh - 154px)) auto;
+  grid-template-rows: auto minmax(520px, calc(100vh - 294px)) auto;
   gap: 12px;
   min-width: 0;
+}
+
+.play-guide {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.2fr) minmax(360px, 1fr);
+  gap: 12px;
+  padding: 14px;
+}
+
+.guide-main {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.guide-icon {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 8px;
+  background: var(--accent-2);
+  color: #191409;
+  font-size: 2.5rem;
+  font-weight: 1000;
+}
+
+.guide-main h2 {
+  margin-top: 3px;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 0.95;
+}
+
+.guide-main p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 1.02rem;
+}
+
+.guide-score {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guide-score div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #3b463b;
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.guide-score span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.guide-score strong {
+  font-size: clamp(1.25rem, 2.2vw, 2rem);
+}
+
+.movement-sequence {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.sequence-chip {
+  display: grid;
+  grid-template-columns: 30px auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  flex: 0 0 auto;
+  padding: 5px 10px 5px 5px;
+  border: 1px solid #3b463b;
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 900;
+}
+
+.sequence-chip span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: rgba(142, 182, 255, 0.18);
+  color: var(--blue);
+}
+
+.sequence-chip.active {
+  border-color: var(--accent-2);
+  background: rgba(255, 211, 90, 0.14);
+}
+
+.sequence-chip.active span {
+  background: var(--accent-2);
+  color: #191409;
+}
+
+.last-award {
+  grid-column: 1 / -1;
+  color: var(--accent-2);
 }
 
 .video-frame {
@@ -596,7 +708,7 @@ h2 {
   }
 
   .camera-column {
-    grid-template-rows: minmax(58vh, auto) auto;
+    grid-template-rows: auto minmax(58vh, auto) auto;
   }
 
   .hud-column {
@@ -612,6 +724,7 @@ h2 {
 
   .home-screen,
   .game-header,
+  .play-guide,
   .sensor-panel,
   .controls,
   .join-actions,
@@ -625,7 +738,18 @@ h2 {
   }
 
   .camera-column {
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
+  }
+
+  .guide-main,
+  .guide-score {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-icon {
+    width: 70px;
+    height: 70px;
+    font-size: 2rem;
   }
 
   .header-actions {
