@@ -14,10 +14,10 @@
       <section id="homeScreen" class="home-screen">
         <div class="home-copy">
           <span class="eyebrow">Move Quest Inclusivo</span>
-          <h1>Um jogo de movimento corporal com camera, avatar e desafios entre colegas.</h1>
+          <h1>Um jogo de movimento corporal com câmera, avatar e desafios entre colegas.</h1>
           <p>
             Entre com seu nome, crie ou use uma sala e jogue com ranking de pontos.
-            A pontuacao so conta quando o corpo inteiro esta visivel e o movimento passa pela calibracao.
+            A pontuação só conta quando o corpo inteiro está visível e o movimento passa pela calibração.
           </p>
 
           <form id="joinForm" class="join-panel">
@@ -27,7 +27,7 @@
             </label>
 
             <label>
-              Codigo da sala
+              Código da sala
               <input id="roomCodeInput" name="roomCode" type="text" maxlength="8" placeholder="Deixe vazio para criar" />
             </label>
 
@@ -45,8 +45,8 @@
         <aside class="home-preview" aria-label="Resumo do jogo">
           <canvas id="homeAvatarCanvas" width="420" height="520"></canvas>
           <div class="preview-list">
-            <div><strong>Camera limpa</strong><span>Nenhum painel fica por cima da captura.</span></div>
-            <div><strong>Sensor honesto</strong><span>Sem corpo inteiro ou baixa confianca, nao pontua.</span></div>
+            <div><strong>Câmera limpa</strong><span>Nenhum painel fica por cima da captura.</span></div>
+            <div><strong>Sensor honesto</strong><span>Sem corpo inteiro ou baixa confiança, não pontua.</span></div>
             <div><strong>Ranking por sala</strong><span>Nome e pontos aparecem para todos da sala.</span></div>
           </div>
         </aside>
@@ -60,14 +60,14 @@
           </div>
           <div>
             <span class="eyebrow">Jogador</span>
-            <strong id="playerLabel">Voce</strong>
+            <strong id="playerLabel">Você</strong>
           </div>
           <div>
             <span class="eyebrow">Modo</span>
             <strong id="modeLabel">Adaptado</strong>
           </div>
           <div class="header-actions">
-            <button id="backHomeButton" type="button">Inicio</button>
+            <button id="backHomeButton" type="button">Início</button>
             <button id="copyRoomButton" type="button">Copiar sala</button>
           </div>
         </header>
@@ -78,24 +78,24 @@
               <div class="guide-main">
                 <div id="guideMovementIcon" class="guide-icon">1</div>
                 <div>
-                  <span class="eyebrow">Faca agora</span>
+                  <span class="eyebrow">Faça agora</span>
                   <h2 id="guideExerciseName">Marcha leve</h2>
                   <p id="guideExerciseHint">Levante um joelho por vez, sem pressa.</p>
                 </div>
               </div>
 
-              <div class="guide-score" aria-label="Pontuacao atual">
+              <div class="guide-score" aria-label="Pontuação atual">
                 <div><span>Pontos</span><strong id="guideScore">0</strong></div>
                 <div><span>Moedas</span><strong id="guideCoins">0</strong></div>
                 <div><span>Acertos</span><strong id="guideReps">0</strong></div>
-                <div><span>Confianca</span><strong id="guideConfidence">0%</strong></div>
+                <div><span>Confiança</span><strong id="guideConfidence">0%</strong></div>
               </div>
 
-              <div class="movement-sequence" id="movementSequence" aria-label="Sequencia de movimentos"></div>
+              <div class="movement-sequence" id="movementSequence" aria-label="Sequência de movimentos"></div>
               <strong id="lastAward" class="last-award">Calibre o corpo para iniciar.</strong>
             </section>
 
-            <div class="video-frame" aria-label="Camera principal sem paineis sobrepostos">
+            <div class="video-frame" aria-label="Câmera principal sem painéis sobrepostos">
               <video id="camera" class="camera" playsinline muted></video>
               <canvas id="poseCanvas" class="pose-canvas"></canvas>
             </div>
@@ -103,9 +103,9 @@
             <div class="sensor-panel" aria-live="polite">
               <div>
                 <span class="eyebrow">Sensor de corpo</span>
-                <strong id="sensorStatus">Inicie a camera e fique de corpo inteiro.</strong>
+                <strong id="sensorStatus">Inicie a câmera e fique de corpo inteiro.</strong>
               </div>
-              <div class="confidence-wrap" aria-label="Confianca do sensor">
+              <div class="confidence-wrap" aria-label="Confiança do sensor">
                 <span id="confidenceText">0%</span>
                 <div class="confidence-track"><div id="confidenceFill"></div></div>
               </div>
@@ -139,9 +139,9 @@
               </div>
 
               <div class="controls">
-                <button id="startButton" type="button">Iniciar camera</button>
-                <button id="audioButton" type="button">Ouvir instrucao</button>
-                <button id="nextButton" type="button">Proximo movimento</button>
+                <button id="startButton" type="button">Iniciar câmera</button>
+                <button id="audioButton" type="button">Ouvir instrução</button>
+                <button id="nextButton" type="button">Próximo movimento</button>
               </div>
             </section>
 
@@ -158,10 +158,10 @@
               <div id="skinStrip" class="skin-strip"></div>
             </section>
 
-            <section class="score-grid" aria-label="Pontuacao">
+            <section class="score-grid" aria-label="Pontuação">
               <div><span>Pontos</span><strong id="score">0</strong></div>
               <div><span>Moedas</span><strong id="coins">0</strong></div>
-              <div><span>Confianca</span><strong id="accuracy">0%</strong></div>
+              <div><span>Confiança</span><strong id="accuracy">0%</strong></div>
               <div><span>Acertos reais</span><strong id="reps">0</strong></div>
             </section>
 
