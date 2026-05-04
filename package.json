@@ -1,0 +1,12 @@
+{
+  "name": "move-quest-inclusivo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jogo inclusivo com camera, reconhecimento corporal, avatar e salas multiplayer.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
