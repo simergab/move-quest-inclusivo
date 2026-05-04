@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Move Quest Inclusivo</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <main class="game-shell">
+      <section class="play-area" aria-label="Jogo com camera e reconhecimento corporal">
+        <header class="top-bar">
+          <div>
+            <span class="eyebrow">Move Quest Inclusivo</span>
+            <h1>Mexa seu corpo e evolua seu avatar</h1>
+          </div>
+          <div class="mode-tabs" id="modeTabs" aria-label="Modos de jogo"></div>
+        </header>
+
+        <div class="video-frame">
+          <video id="camera" class="camera" playsinline muted></video>
+          <canvas id="poseCanvas" class="pose-canvas"></canvas>
+
+          <div class="camera-badge" id="cameraBadge">
+            <strong>Camera pronta</strong>
+            <span>Fique de corpo inteiro na tela.</span>
+          </div>
+
+          <div class="movement-card" aria-live="polite">
+            <div id="movementIcon" class="movement-icon">1</div>
+            <div>
+              <span class="eyebrow">Agora faca</span>
+              <h2 id="exerciseName">Marcha leve</h2>
+              <p id="exerciseHint">Levante um joelho por vez, sem pressa.</p>
+            </div>
+            <button id="audioButton" class="icon-button" type="button" aria-label="Ouvir instrucao">Som</button>
+          </div>
+        </div>
+
+        <div class="mission-bar">
+          <div class="timer-wrap" aria-label="Tempo restante">
+            <svg viewBox="0 0 120 120" role="img">
+              <circle class="timer-bg" cx="60" cy="60" r="52"></circle>
+              <circle id="timerRing" class="timer-ring" cx="60" cy="60" r="52"></circle>
+            </svg>
+            <span id="timerText">60</span>
+          </div>
+
+          <div class="feedback-panel">
+            <strong id="positiveFeedback">Voce consegue. Vamos devagar.</strong>
+            <span id="modeDescription">Modo adaptado para movimentos simples, claros e com tempo maior.</span>
+          </div>
+
+          <div class="controls">
+            <button id="startButton" type="button">Iniciar camera</button>
+            <button id="nextButton" type="button">Proximo movimento</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="Avatar, progresso e desafios">
+        <section class="avatar-zone" aria-label="Avatar do jogador">
+          <div class="avatar-head">
+            <div>
+              <span class="eyebrow">Meu avatar</span>
+              <strong id="avatarLevel">Nivel 1 - Comecando</strong>
+            </div>
+            <span id="weeklyRank" class="rank-pill">Semana: 4o</span>
+          </div>
+          <canvas id="avatarCanvas" width="360" height="420" aria-label="Personagem humano completo"></canvas>
+          <div class="level-track" aria-label="Progresso do nivel">
+            <div id="levelFill"></div>
+          </div>
+          <div class="skin-strip" id="skinStrip"></div>
+        </section>
+
+        <section class="score-grid" aria-label="Pontuacao">
+          <div>
+            <span>Pontos</span>
+            <strong id="score">0</strong>
+          </div>
+          <div>
+            <span>Moedas</span>
+            <strong id="coins">0</strong>
+          </div>
+          <div>
+            <span>Precisao</span>
+            <strong id="accuracy">0%</strong>
+          </div>
+          <div>
+            <span>Acertos</span>
+            <strong id="reps">0</strong>
+          </div>
+        </section>
+
+        <section class="challenge-board" aria-label="Desafios entre amigos">
+          <div class="section-head">
+            <span class="eyebrow">Desafios entre amigos</span>
+            <strong>Ranking semanal</strong>
+          </div>
+          <ol id="rankingList" class="ranking-list"></ol>
+        </section>
+
+        <section class="shop" aria-label="Loja de recompensas">
+          <div class="section-head">
+            <span class="eyebrow">Evolucao</span>
+            <strong>Roupas, habilidades e desafios</strong>
+          </div>
+          <div id="shopList" class="shop-list"></div>
+        </section>
+      </aside>
+    </main>
+
+    <div id="toastHost" class="toast-host" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
