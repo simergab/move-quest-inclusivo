@@ -558,6 +558,21 @@ h2 {
   margin-top: 3px;
 }
 
+.evolution-callout {
+  display: grid;
+  gap: 3px;
+  margin: 0 14px 10px;
+  padding: 10px;
+  border: 1px solid #3b463b;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255, 211, 90, 0.14), rgba(95, 224, 184, 0.09));
+}
+
+.evolution-callout span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 .rank-pill,
 .online-pill {
   flex: 0 0 auto;
