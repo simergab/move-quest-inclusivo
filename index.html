@@ -74,6 +74,27 @@
 
         <section class="game-layout">
           <div class="camera-column">
+            <section class="play-guide" aria-live="polite">
+              <div class="guide-main">
+                <div id="guideMovementIcon" class="guide-icon">1</div>
+                <div>
+                  <span class="eyebrow">Faca agora</span>
+                  <h2 id="guideExerciseName">Marcha leve</h2>
+                  <p id="guideExerciseHint">Levante um joelho por vez, sem pressa.</p>
+                </div>
+              </div>
+
+              <div class="guide-score" aria-label="Pontuacao atual">
+                <div><span>Pontos</span><strong id="guideScore">0</strong></div>
+                <div><span>Moedas</span><strong id="guideCoins">0</strong></div>
+                <div><span>Acertos</span><strong id="guideReps">0</strong></div>
+                <div><span>Confianca</span><strong id="guideConfidence">0%</strong></div>
+              </div>
+
+              <div class="movement-sequence" id="movementSequence" aria-label="Sequencia de movimentos"></div>
+              <strong id="lastAward" class="last-award">Calibre o corpo para iniciar.</strong>
+            </section>
+
             <div class="video-frame" aria-label="Camera principal sem paineis sobrepostos">
               <video id="camera" class="camera" playsinline muted></video>
               <canvas id="poseCanvas" class="pose-canvas"></canvas>
