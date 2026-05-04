@@ -70,8 +70,8 @@ const modes = [
   },
   {
     id: "dance",
-    name: "Jogo de danca",
-    description: "Ritmo lateral, bracos e polichinelo adaptado.",
+    name: "Jogo de dança",
+    description: "Ritmo lateral, braços e polichinelo adaptado.",
     exercises: ["dance", "arms", "jack"],
     scoreMultiplier: 1.3,
   },
@@ -85,7 +85,7 @@ const modes = [
   {
     id: "inclusive",
     name: "Adaptado",
-    description: "Ritmo lento, instrucoes simples e movimentos de baixo impacto.",
+    description: "Ritmo lento, instruções simples e movimentos de baixo impacto.",
     exercises: ["march", "arms", "dance"],
     scoreMultiplier: 1,
   },
@@ -96,7 +96,7 @@ const exerciseLibrary = {
     icon: "1",
     name: "Marcha leve",
     hint: "Levante um joelho por vez. Conta apenas quando os joelhos alternam.",
-    spoken: "Marcha leve. Levante um joelho por vez. Faca devagar.",
+    spoken: "Marcha leve. Levante um joelho por vez. Faça devagar.",
     detect: detectMarch,
   },
   jump: {
@@ -109,8 +109,8 @@ const exerciseLibrary = {
   jack: {
     icon: "3",
     name: "Polichinelo adaptado",
-    hint: "Abra os bracos acima dos ombros. No modo danca, abrir as pernas melhora a pontuacao.",
-    spoken: "Polichinelo adaptado. Abra os bracos acima dos ombros.",
+    hint: "Abra os braços acima dos ombros. No modo dança, abrir as pernas melhora a pontuação.",
+    spoken: "Polichinelo adaptado. Abra os braços acima dos ombros.",
     detect: detectJumpingJack,
   },
   squat: {
@@ -122,16 +122,16 @@ const exerciseLibrary = {
   },
   dance: {
     icon: "5",
-    name: "Danca lateral",
+    name: "Dança lateral",
     hint: "Leve o tronco para um lado e depois para o outro.",
-    spoken: "Danca lateral. Balance para um lado e depois para o outro.",
+    spoken: "Dança lateral. Balance para um lado e depois para o outro.",
     detect: detectDance,
   },
   arms: {
     icon: "6",
-    name: "Bracos para cima",
-    hint: "Levante as duas maos acima da cabeca e depois abaixe.",
-    spoken: "Bracos para cima. Levante as duas maos acima da cabeca.",
+    name: "Braços para cima",
+    hint: "Levante as duas mãos acima da cabeça e depois abaixe.",
+    spoken: "Braços para cima. Levante as duas mãos acima da cabeça.",
     detect: detectArmsUp,
   },
 };
@@ -139,7 +139,7 @@ const exerciseLibrary = {
 const rewards = [
   { id: "starter", type: "Roupa", name: "Treino", color: "#5fe0b8", price: 0, owned: true },
   { id: "sun", type: "Roupa", name: "Solar", color: "#ffd35a", price: 40, owned: false },
-  { id: "beat", type: "Roupa", name: "Danca", color: "#ff7d73", price: 70, owned: false },
+  { id: "beat", type: "Roupa", name: "Dança", color: "#ff7d73", price: 70, owned: false },
   { id: "focus", type: "Habilidade", name: "Ritmo lento", color: "#8eb6ff", price: 95, owned: false },
   { id: "star", type: "Roupa", name: "Campeao", color: "#d9a7ff", price: 160, owned: false },
 ];
@@ -159,7 +159,8 @@ let selectedReward = rewards[0];
 let phase = {};
 let baseline = null;
 let calibration = { active: false, startedAt: 0, samples: [] };
-let lastPoseQuality = { valid: false, confidence: 0, reason: "Aguardando camera" };
+let lastPoseQuality = { valid: false, confidence: 0, reason: "Aguardando câmera" };
+let portugueseVoice = null;
 let players = [];
 let session = {
   playerId: "",
@@ -172,6 +173,19 @@ let syncTimer = 0;
 
 timerRing.style.strokeDasharray = `${ringLength}`;
 timerRing.style.strokeDashoffset = "0";
+loadPortugueseVoice();
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.addEventListener("voiceschanged", loadPortugueseVoice);
+}
+
+function loadPortugueseVoice() {
+  if (!("speechSynthesis" in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  portugueseVoice =
+    voices.find((voice) => voice.lang.toLowerCase() === "pt-br") ||
+    voices.find((voice) => voice.lang.toLowerCase().startsWith("pt")) ||
+    null;
+}
 
 function renderModeTabs() {
   homeModeTabs.innerHTML = "";
@@ -229,7 +243,7 @@ async function joinOnlineRoom(requestedRoom, playerName) {
   } catch (_error) {
     session.online = false;
     players = [{ id: session.playerId, name: playerName, score: 0, reps: 0, mode: selectedMode.name }];
-    connectionNote.textContent = "Sem backend online nesta origem. O ranking fica local ate publicar no Render.";
+    connectionNote.textContent = "Sem backend online nesta origem. O ranking fica local até publicar no Render.";
   }
 }
 
@@ -270,7 +284,7 @@ function syncScoreSoon() {
 async function syncScoreNow() {
   const ownPlayer = {
     id: session.playerId,
-    name: session.playerName || "Voce",
+    name: session.playerName || "Você",
     score,
     reps,
     mode: selectedMode.name,
@@ -337,7 +351,7 @@ async function startCamera() {
 
   await camera.start();
   startCalibration();
-  startButton.textContent = "Camera ligada";
+  startButton.textContent = "Câmera ligada";
   startButton.disabled = false;
   speakCurrentExercise();
 }
@@ -347,8 +361,8 @@ function startCalibration() {
   baseline = null;
   gameRunning = false;
   sensorStatus.textContent = "Calibrando: fique parado, de corpo inteiro, por alguns segundos.";
-  positiveFeedback.textContent = "Calibrando. Nao vou contar pontos ainda.";
-  lastAward.textContent = "Calibrando: fique parado e apareca de corpo inteiro.";
+  positiveFeedback.textContent = "Calibrando. Não vou contar pontos ainda.";
+  lastAward.textContent = "Calibrando: fique parado e apareça de corpo inteiro.";
 }
 
 function onPoseResults(results) {
@@ -391,9 +405,9 @@ function analyzePose(landmarks) {
     return point.x > 0.02 && point.x < 0.98 && point.y > 0.02 && point.y < 0.99;
   });
 
-  if (confidence < 92) return { valid: false, confidence, reason: "Mostre cabeca, bracos, quadril, joelhos e pes." };
-  if (!bodyInFrame) return { valid: false, confidence, reason: "Afaste a camera: parte do corpo saiu da tela." };
-  if (shoulders < 0.07 || hips < 0.05 || torso < 0.12) return { valid: false, confidence, reason: "Corpo muito longe ou pose instavel." };
+  if (confidence < 92) return { valid: false, confidence, reason: "Mostre cabeça, braços, quadril, joelhos e pés." };
+  if (!bodyInFrame) return { valid: false, confidence, reason: "Afaste a câmera: parte do corpo saiu da tela." };
+  if (shoulders < 0.07 || hips < 0.05 || torso < 0.12) return { valid: false, confidence, reason: "Corpo muito longe ou pose instável." };
   return { valid: true, confidence, reason: "Corpo inteiro reconhecido.", shoulders, hips, torso };
 }
 
@@ -449,9 +463,9 @@ function handleCalibration(features) {
   history = [];
   phase = {};
   sensorStatus.textContent = "Calibrado. Agora os pontos contam apenas com movimento confirmado.";
-  positiveFeedback.textContent = "Pronto. Movimento real vale ponto; pose fraca nao vale.";
-  lastAward.textContent = `Agora faca: ${currentExercise().name}.`;
-  showToast("Calibracao concluida. Pode jogar.");
+  positiveFeedback.textContent = "Pronto. Movimento real vale ponto; pose fraca não vale.";
+  lastAward.textContent = `Agora faça: ${currentExercise().name}.`;
+  showToast("Calibração concluída. Pode jogar.");
 }
 
 function averageFeatures(samples) {
@@ -495,11 +509,11 @@ function evaluateMove(features, quality) {
     score += gained;
     coins += Math.max(2, Math.ceil(gained / 5));
     phase = { ...phase, hitAt: features.t };
-    positiveFeedback.textContent = `Movimento confirmado com ${Math.round(verifiedQuality * 100)}% de confianca.`;
+    positiveFeedback.textContent = `Movimento confirmado com ${Math.round(verifiedQuality * 100)}% de confiança.`;
     lastAward.textContent = `+${gained} pontos: ${currentExercise().name} confirmado.`;
     updateHud();
     syncScoreSoon();
-    showToast(`+${gained} pontos para ${session.playerName || "voce"}.`);
+    showToast(`+${gained} pontos para ${session.playerName || "você"}.`);
   }
 }
 
@@ -524,7 +538,7 @@ function nextExercise() {
   history = [];
   renderCurrentExercise();
   speakCurrentExercise();
-  lastAward.textContent = `Agora faca: ${currentExercise().name}.`;
+  lastAward.textContent = `Agora faça: ${currentExercise().name}.`;
 }
 
 function renderCurrentExercise() {
@@ -542,12 +556,13 @@ function renderCurrentExercise() {
 function speakCurrentExercise() {
   const synth = window.speechSynthesis;
   if (!synth) {
-    showToast("Audio indisponivel neste navegador.");
+    showToast("Áudio indisponível neste navegador.");
     return;
   }
   synth.cancel();
   const utterance = new SpeechSynthesisUtterance(currentExercise().spoken);
   utterance.lang = "pt-BR";
+  if (portugueseVoice) utterance.voice = portugueseVoice;
   utterance.rate = selectedMode.id === "inclusive" ? 0.82 : 0.95;
   synth.speak(utterance);
 }
@@ -928,8 +943,8 @@ createRoomButton.addEventListener("click", () => enterGame(true));
 startButton.addEventListener("click", () => {
   startCamera().catch((error) => {
     startButton.disabled = false;
-    startButton.textContent = "Iniciar camera";
-    showToast("Nao consegui acessar a camera. Confira a permissao do navegador.");
+    startButton.textContent = "Iniciar câmera";
+    showToast("Não consegui acessar a câmera. Confira a permissão do navegador.");
     console.error(error);
   });
 });
@@ -943,7 +958,7 @@ backHomeButton.addEventListener("click", () => {
 copyRoomButton.addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(session.roomCode);
-    showToast("Codigo da sala copiado.");
+    showToast("Código da sala copiado.");
   } catch (_error) {
     showToast(`Sala: ${session.roomCode}`);
   }
