@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: move-quest-inclusivo
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: .
