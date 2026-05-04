@@ -46,6 +46,8 @@ const confidenceFill = document.querySelector("#confidenceFill");
 const positiveFeedback = document.querySelector("#positiveFeedback");
 const modeDescription = document.querySelector("#modeDescription");
 const avatarLevel = document.querySelector("#avatarLevel");
+const evolutionTitle = document.querySelector("#evolutionTitle");
+const evolutionText = document.querySelector("#evolutionText");
 const weeklyRank = document.querySelector("#weeklyRank");
 const levelFill = document.querySelector("#levelFill");
 const shopList = document.querySelector("#shopList");
@@ -157,6 +159,7 @@ let history = [];
 let gameRunning = false;
 let selectedReward = rewards[0];
 let phase = {};
+let lastAnnouncedLevel = 1;
 let baseline = null;
 let calibration = { active: false, startedAt: 0, samples: [] };
 let lastPoseQuality = { valid: false, confidence: 0, reason: "Aguardando câmera" };
@@ -651,7 +654,7 @@ function updateSensorPanel(quality) {
 }
 
 function updateHud() {
-  const level = Math.floor(score / 200) + 1;
+  const level = avatarLevelFromScore(score);
   const levelProgress = Math.min(100, Math.round(((score % 200) / 200) * 100));
   scoreEl.textContent = score;
   coinsEl.textContent = coins;
@@ -659,8 +662,11 @@ function updateHud() {
   guideScore.textContent = score;
   guideCoins.textContent = coins;
   guideReps.textContent = reps;
-  avatarLevel.textContent = `Nivel ${level} - ${levelTitle(level)}`;
+  avatarLevel.textContent = `Nível ${level} - ${levelTitle(level)}`;
+  evolutionTitle.textContent = `Força ${musclePercent(level)}%`;
+  evolutionText.textContent = evolutionDescription(level);
   levelFill.style.width = `${levelProgress}%`;
+  announceLevelUp(level);
   renderRanking();
   renderShop();
   renderSkins();
@@ -754,7 +760,7 @@ function drawPose(landmarks, quality) {
 
 function drawAvatarLoop() {
   drawHumanAvatar(avatarCtx, avatarCanvas, selectedReward.color, score, phase.hitAt || 0);
-  drawHumanAvatar(homeAvatarCtx, homeAvatarCanvas, "#5fe0b8", 280, 0);
+  drawHumanAvatar(homeAvatarCtx, homeAvatarCanvas, "#5fe0b8", 1600, 0);
   requestAnimationFrame(drawAvatarLoop);
 }
 
@@ -763,60 +769,83 @@ function drawHumanAvatar(ctx, canvas, outfitColor, avatarScore, hitAt) {
   const h = canvas.height;
   const t = performance.now() / 1000;
   const pulse = hitAt ? Math.max(0, 1 - (performance.now() - hitAt) / 420) : 0;
-  const level = Math.floor(avatarScore / 200) + 1;
+  const level = avatarLevelFromScore(avatarScore);
+  const muscle = (level - 1) / 11;
+  const bodyScale = 1 + muscle * 0.16;
+  const shoulderBoost = 1 + muscle * 0.56;
+  const armBoost = 1 + muscle * 0.95;
+  const legBoost = 1 + muscle * 0.55;
+  const chestBoost = 1 + muscle * 0.7;
   const x = w / 2;
   const y = h * 0.5 + Math.sin(t * 2.6) * 3 - pulse * 8;
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = "#141912";
   ctx.fillRect(0, 0, w, h);
 
-  ctx.fillStyle = "rgba(95, 224, 184, 0.1)";
+  ctx.fillStyle = `rgba(95, 224, 184, ${0.1 + muscle * 0.13})`;
   ctx.beginPath();
-  ctx.ellipse(x, h - 38, 110, 20, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, h - 38, 110 + muscle * 55, 20 + muscle * 8, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  if (level >= 10) {
+    ctx.strokeStyle = `rgba(255, 211, 90, ${0.2 + pulse * 0.4})`;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(x, y - 10, 145 + Math.sin(t * 4) * 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   const skin = "#d7a77c";
   const shade = "#b98562";
   const pants = "#26344f";
   const shoe = "#10140f";
 
-  capsule(ctx, x - 42, y + 56, x - 62, y + 150, 28, pants);
-  capsule(ctx, x + 42, y + 56, x + 62, y + 150, 28, pants);
-  capsule(ctx, x - 62, y + 150, x - 76, y + 194, 24, skin);
-  capsule(ctx, x + 62, y + 150, x + 76, y + 194, 24, skin);
-  capsule(ctx, x - 78, y + 198, x - 42, y + 200, 18, shoe);
-  capsule(ctx, x + 42, y + 200, x + 78, y + 198, 18, shoe);
+  const hipOffset = 38 * bodyScale;
+  const kneeOffset = 56 * bodyScale;
+  const footOffset = 74 * bodyScale;
+  capsule(ctx, x - hipOffset, y + 58, x - kneeOffset, y + 150, 28 * legBoost, pants);
+  capsule(ctx, x + hipOffset, y + 58, x + kneeOffset, y + 150, 28 * legBoost, pants);
+  capsule(ctx, x - kneeOffset, y + 150, x - footOffset, y + 194, 24 * legBoost, skin);
+  capsule(ctx, x + kneeOffset, y + 150, x + footOffset, y + 194, 24 * legBoost, skin);
+  capsule(ctx, x - footOffset - 2, y + 198, x - 40, y + 200, 18 + muscle * 6, shoe);
+  capsule(ctx, x + 40, y + 200, x + footOffset + 2, y + 198, 18 + muscle * 6, shoe);
 
   ctx.fillStyle = outfitColor;
   ctx.beginPath();
-  ctx.moveTo(x - 74, y - 54);
-  ctx.quadraticCurveTo(x - 42, y - 82, x, y - 74);
-  ctx.quadraticCurveTo(x + 42, y - 82, x + 74, y - 54);
-  ctx.lineTo(x + 50, y + 64);
-  ctx.quadraticCurveTo(x, y + 88, x - 50, y + 64);
+  ctx.moveTo(x - 72 * shoulderBoost, y - 54);
+  ctx.quadraticCurveTo(x - 46 * shoulderBoost, y - 90, x, y - 78);
+  ctx.quadraticCurveTo(x + 46 * shoulderBoost, y - 90, x + 72 * shoulderBoost, y - 54);
+  ctx.lineTo(x + 48 * chestBoost, y + 66);
+  ctx.quadraticCurveTo(x, y + 91, x - 48 * chestBoost, y + 66);
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "rgba(255,255,255,0.16)";
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
   ctx.beginPath();
-  ctx.ellipse(x, y - 8, 26 + level, 54, 0, 0, Math.PI * 2);
+  ctx.ellipse(x - 20 * muscle, y - 12, 24 + muscle * 26, 48 + muscle * 12, -0.22, 0, Math.PI * 2);
+  ctx.ellipse(x + 20 * muscle, y - 12, 24 + muscle * 26, 48 + muscle * 12, 0.22, 0, Math.PI * 2);
   ctx.fill();
 
-  capsule(ctx, x - 78, y - 46, x - 118, y + 32 - pulse * 28, 24, skin);
-  capsule(ctx, x + 78, y - 46, x + 118, y + 32 - pulse * 28, 24, skin);
-  capsule(ctx, x - 118, y + 32 - pulse * 28, x - 122, y + 92 - pulse * 32, 22, shade);
-  capsule(ctx, x + 118, y + 32 - pulse * 28, x + 122, y + 92 - pulse * 32, 22, shade);
+  capsule(ctx, x - 76 * shoulderBoost, y - 48, x - 118 * shoulderBoost, y + 30 - pulse * 28, 25 * armBoost, skin);
+  capsule(ctx, x + 76 * shoulderBoost, y - 48, x + 118 * shoulderBoost, y + 30 - pulse * 28, 25 * armBoost, skin);
+  capsule(ctx, x - 118 * shoulderBoost, y + 30 - pulse * 28, x - 122 * shoulderBoost, y + 92 - pulse * 32, 22 * armBoost, shade);
+  capsule(ctx, x + 118 * shoulderBoost, y + 30 - pulse * 28, x + 122 * shoulderBoost, y + 92 - pulse * 32, 22 * armBoost, shade);
+
+  drawBiceps(ctx, x - 114 * shoulderBoost, y + 22 - pulse * 18, 17 + muscle * 24, skin, shade);
+  drawBiceps(ctx, x + 114 * shoulderBoost, y + 22 - pulse * 18, 17 + muscle * 24, skin, shade);
+  drawShoulder(ctx, x - 75 * shoulderBoost, y - 48, 20 + muscle * 22, skin);
+  drawShoulder(ctx, x + 75 * shoulderBoost, y - 48, 20 + muscle * 22, skin);
 
   ctx.fillStyle = skin;
   roundedRect(ctx, x - 22, y - 104, 44, 42, 18);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x, y - 128, 42, 0, Math.PI * 2);
+  ctx.arc(x, y - 128 - muscle * 5, 42 + muscle * 3, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = "#2d2018";
   ctx.beginPath();
-  ctx.ellipse(x, y - 150, 46, 24, 0, Math.PI, Math.PI * 2);
+  ctx.ellipse(x, y - 150 - muscle * 5, 46 + muscle * 4, 24, 0, Math.PI, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = "#151914";
@@ -835,6 +864,35 @@ function drawHumanAvatar(ctx, canvas, outfitColor, avatarScore, hitAt) {
   ctx.font = "900 22px Inter, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(`NV ${level}`, x, 34);
+
+  if (level >= 12) {
+    ctx.fillStyle = "#ffd35a";
+    ctx.font = "900 18px Inter, sans-serif";
+    ctx.fillText("BOMBADÃO", x, 60);
+  }
+}
+
+function drawBiceps(ctx, x, y, radius, skin, shade) {
+  ctx.fillStyle = skin;
+  ctx.beginPath();
+  ctx.ellipse(x, y, radius * 0.82, radius, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.16)";
+  ctx.beginPath();
+  ctx.ellipse(x - radius * 0.18, y - radius * 0.24, radius * 0.25, radius * 0.18, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = shade;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x, y + radius * 0.08, radius * 0.42, 0.2, 2.3);
+  ctx.stroke();
+}
+
+function drawShoulder(ctx, x, y, radius, skin) {
+  ctx.fillStyle = skin;
+  ctx.beginPath();
+  ctx.ellipse(x, y, radius, radius * 0.82, 0, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function capsule(ctx, x1, y1, x2, y2, width, color) {
@@ -910,10 +968,38 @@ function upsertPlayer(list, player) {
 }
 
 function levelTitle(level) {
-  if (level >= 8) return "Campeao ativo";
-  if (level >= 5) return "Explorador em movimento";
-  if (level >= 3) return "Corpo acordado";
-  return "Comecando";
+  if (level >= 12) return "Bombadão final";
+  if (level >= 10) return "Super forte";
+  if (level >= 8) return "Musculoso";
+  if (level >= 6) return "Forte";
+  if (level >= 4) return "Em forma";
+  if (level >= 2) return "Ganhando força";
+  return "Começando";
+}
+
+function avatarLevelFromScore(value) {
+  return Math.min(12, Math.floor(value / 200) + 1);
+}
+
+function musclePercent(level) {
+  return Math.round(((level - 1) / 11) * 100);
+}
+
+function evolutionDescription(level) {
+  if (level >= 12) return "Zerou a evolução: avatar super bombadão.";
+  if (level >= 10) return "O avatar está enorme, com braços e peito muito fortes.";
+  if (level >= 8) return "O corpo já está musculoso e bem maior.";
+  if (level >= 6) return "Braços, pernas e ombros estão ficando fortes.";
+  if (level >= 4) return "O avatar cresceu e começou a ganhar músculo.";
+  if (level >= 2) return "Primeiros músculos aparecendo.";
+  return "Ganhe pontos para o avatar crescer e ficar mais forte.";
+}
+
+function announceLevelUp(level) {
+  if (level <= lastAnnouncedLevel) return;
+  lastAnnouncedLevel = level;
+  lastAward.textContent = `Nível ${level}: ${evolutionDescription(level)}`;
+  showToast(`Evolução! Nível ${level} - ${levelTitle(level)}.`);
 }
 
 function showToast(message) {
