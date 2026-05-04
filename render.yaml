@@ -1,6 +1,7 @@
 services:
   - type: web
     name: move-quest-inclusivo
-    runtime: static
+    runtime: node
+    plan: free
     buildCommand: ""
-    staticPublishPath: .
+    startCommand: "node server.js"
