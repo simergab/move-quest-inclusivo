@@ -25,6 +25,15 @@ const calibrateButton = document.querySelector("#calibrateButton");
 const exerciseName = document.querySelector("#exerciseName");
 const exerciseHint = document.querySelector("#exerciseHint");
 const movementIcon = document.querySelector("#movementIcon");
+const guideMovementIcon = document.querySelector("#guideMovementIcon");
+const guideExerciseName = document.querySelector("#guideExerciseName");
+const guideExerciseHint = document.querySelector("#guideExerciseHint");
+const guideScore = document.querySelector("#guideScore");
+const guideCoins = document.querySelector("#guideCoins");
+const guideReps = document.querySelector("#guideReps");
+const guideConfidence = document.querySelector("#guideConfidence");
+const movementSequence = document.querySelector("#movementSequence");
+const lastAward = document.querySelector("#lastAward");
 const scoreEl = document.querySelector("#score");
 const coinsEl = document.querySelector("#coins");
 const confidenceScoreEl = document.querySelector("#accuracy");
@@ -339,6 +348,7 @@ function startCalibration() {
   gameRunning = false;
   sensorStatus.textContent = "Calibrando: fique parado, de corpo inteiro, por alguns segundos.";
   positiveFeedback.textContent = "Calibrando. Nao vou contar pontos ainda.";
+  lastAward.textContent = "Calibrando: fique parado e apareca de corpo inteiro.";
 }
 
 function onPoseResults(results) {
@@ -440,6 +450,7 @@ function handleCalibration(features) {
   phase = {};
   sensorStatus.textContent = "Calibrado. Agora os pontos contam apenas com movimento confirmado.";
   positiveFeedback.textContent = "Pronto. Movimento real vale ponto; pose fraca nao vale.";
+  lastAward.textContent = `Agora faca: ${currentExercise().name}.`;
   showToast("Calibracao concluida. Pode jogar.");
 }
 
@@ -485,6 +496,7 @@ function evaluateMove(features, quality) {
     coins += Math.max(2, Math.ceil(gained / 5));
     phase = { ...phase, hitAt: features.t };
     positiveFeedback.textContent = `Movimento confirmado com ${Math.round(verifiedQuality * 100)}% de confianca.`;
+    lastAward.textContent = `+${gained} pontos: ${currentExercise().name} confirmado.`;
     updateHud();
     syncScoreSoon();
     showToast(`+${gained} pontos para ${session.playerName || "voce"}.`);
@@ -512,6 +524,7 @@ function nextExercise() {
   history = [];
   renderCurrentExercise();
   speakCurrentExercise();
+  lastAward.textContent = `Agora faca: ${currentExercise().name}.`;
 }
 
 function renderCurrentExercise() {
@@ -519,7 +532,11 @@ function renderCurrentExercise() {
   movementIcon.textContent = exercise.icon;
   exerciseName.textContent = exercise.name;
   exerciseHint.textContent = exercise.hint;
+  guideMovementIcon.textContent = exercise.icon;
+  guideExerciseName.textContent = exercise.name;
+  guideExerciseHint.textContent = exercise.hint;
   modeDescription.textContent = selectedMode.description;
+  renderMovementSequence();
 }
 
 function speakCurrentExercise() {
@@ -614,6 +631,7 @@ function updateSensorPanel(quality) {
   confidenceText.textContent = `${quality.confidence}%`;
   confidenceFill.style.width = `${quality.confidence}%`;
   confidenceScoreEl.textContent = `${quality.confidence}%`;
+  guideConfidence.textContent = `${quality.confidence}%`;
   if (!calibration.active) sensorStatus.textContent = quality.reason;
 }
 
@@ -623,11 +641,25 @@ function updateHud() {
   scoreEl.textContent = score;
   coinsEl.textContent = coins;
   repsEl.textContent = reps;
+  guideScore.textContent = score;
+  guideCoins.textContent = coins;
+  guideReps.textContent = reps;
   avatarLevel.textContent = `Nivel ${level} - ${levelTitle(level)}`;
   levelFill.style.width = `${levelProgress}%`;
   renderRanking();
   renderShop();
   renderSkins();
+}
+
+function renderMovementSequence() {
+  movementSequence.innerHTML = "";
+  selectedMode.exercises.forEach((exerciseId, index) => {
+    const exercise = exerciseLibrary[exerciseId];
+    const item = document.createElement("div");
+    item.className = `sequence-chip${index === currentExerciseIndex % selectedMode.exercises.length ? " active" : ""}`;
+    item.innerHTML = `<span>${exercise.icon}</span>${escapeHtml(exercise.name)}`;
+    movementSequence.append(item);
+  });
 }
 
 function renderRanking() {
