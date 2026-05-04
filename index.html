@@ -10,108 +10,163 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
   </head>
   <body>
-    <main class="game-shell">
-      <section class="play-area" aria-label="Jogo com camera e reconhecimento corporal">
-        <header class="top-bar">
-          <div>
-            <span class="eyebrow">Move Quest Inclusivo</span>
-            <h1>Mexa seu corpo e evolua seu avatar</h1>
-          </div>
-          <div class="mode-tabs" id="modeTabs" aria-label="Modos de jogo"></div>
-        </header>
+    <main>
+      <section id="homeScreen" class="home-screen">
+        <div class="home-copy">
+          <span class="eyebrow">Move Quest Inclusivo</span>
+          <h1>Um jogo de movimento corporal com camera, avatar e desafios entre colegas.</h1>
+          <p>
+            Entre com seu nome, crie ou use uma sala e jogue com ranking de pontos.
+            A pontuacao so conta quando o corpo inteiro esta visivel e o movimento passa pela calibracao.
+          </p>
 
-        <div class="video-frame">
-          <video id="camera" class="camera" playsinline muted></video>
-          <canvas id="poseCanvas" class="pose-canvas"></canvas>
+          <form id="joinForm" class="join-panel">
+            <label>
+              Seu nome
+              <input id="playerName" name="playerName" type="text" maxlength="24" autocomplete="name" placeholder="Ex: Gabriel" required />
+            </label>
 
-          <div class="camera-badge" id="cameraBadge">
-            <strong>Camera pronta</strong>
-            <span>Fique de corpo inteiro na tela.</span>
-          </div>
+            <label>
+              Codigo da sala
+              <input id="roomCodeInput" name="roomCode" type="text" maxlength="8" placeholder="Deixe vazio para criar" />
+            </label>
 
-          <div class="movement-card" aria-live="polite">
-            <div id="movementIcon" class="movement-icon">1</div>
-            <div>
-              <span class="eyebrow">Agora faca</span>
-              <h2 id="exerciseName">Marcha leve</h2>
-              <p id="exerciseHint">Levante um joelho por vez, sem pressa.</p>
+            <div class="mode-picker" id="homeModeTabs" aria-label="Escolha o modo"></div>
+
+            <div class="join-actions">
+              <button id="createRoomButton" type="button">Criar sala</button>
+              <button type="submit">Entrar no jogo</button>
             </div>
-            <button id="audioButton" class="icon-button" type="button" aria-label="Ouvir instrucao">Som</button>
-          </div>
+
+            <span id="connectionNote" class="note">Multiplayer online funciona quando o app estiver no Render.</span>
+          </form>
         </div>
 
-        <div class="mission-bar">
-          <div class="timer-wrap" aria-label="Tempo restante">
-            <svg viewBox="0 0 120 120" role="img">
-              <circle class="timer-bg" cx="60" cy="60" r="52"></circle>
-              <circle id="timerRing" class="timer-ring" cx="60" cy="60" r="52"></circle>
-            </svg>
-            <span id="timerText">60</span>
+        <aside class="home-preview" aria-label="Resumo do jogo">
+          <canvas id="homeAvatarCanvas" width="420" height="520"></canvas>
+          <div class="preview-list">
+            <div><strong>Camera limpa</strong><span>Nenhum painel fica por cima da captura.</span></div>
+            <div><strong>Sensor honesto</strong><span>Sem corpo inteiro ou baixa confianca, nao pontua.</span></div>
+            <div><strong>Ranking por sala</strong><span>Nome e pontos aparecem para todos da sala.</span></div>
           </div>
-
-          <div class="feedback-panel">
-            <strong id="positiveFeedback">Voce consegue. Vamos devagar.</strong>
-            <span id="modeDescription">Modo adaptado para movimentos simples, claros e com tempo maior.</span>
-          </div>
-
-          <div class="controls">
-            <button id="startButton" type="button">Iniciar camera</button>
-            <button id="nextButton" type="button">Proximo movimento</button>
-          </div>
-        </div>
+        </aside>
       </section>
 
-      <aside class="side-panel" aria-label="Avatar, progresso e desafios">
-        <section class="avatar-zone" aria-label="Avatar do jogador">
-          <div class="avatar-head">
-            <div>
-              <span class="eyebrow">Meu avatar</span>
-              <strong id="avatarLevel">Nivel 1 - Comecando</strong>
+      <section id="gameScreen" class="game-screen hidden">
+        <header class="game-header">
+          <div>
+            <span class="eyebrow">Sala</span>
+            <strong id="roomLabel">----</strong>
+          </div>
+          <div>
+            <span class="eyebrow">Jogador</span>
+            <strong id="playerLabel">Voce</strong>
+          </div>
+          <div>
+            <span class="eyebrow">Modo</span>
+            <strong id="modeLabel">Adaptado</strong>
+          </div>
+          <div class="header-actions">
+            <button id="backHomeButton" type="button">Inicio</button>
+            <button id="copyRoomButton" type="button">Copiar sala</button>
+          </div>
+        </header>
+
+        <section class="game-layout">
+          <div class="camera-column">
+            <div class="video-frame" aria-label="Camera principal sem paineis sobrepostos">
+              <video id="camera" class="camera" playsinline muted></video>
+              <canvas id="poseCanvas" class="pose-canvas"></canvas>
             </div>
-            <span id="weeklyRank" class="rank-pill">Semana: 4o</span>
-          </div>
-          <canvas id="avatarCanvas" width="360" height="420" aria-label="Personagem humano completo"></canvas>
-          <div class="level-track" aria-label="Progresso do nivel">
-            <div id="levelFill"></div>
-          </div>
-          <div class="skin-strip" id="skinStrip"></div>
-        </section>
 
-        <section class="score-grid" aria-label="Pontuacao">
-          <div>
-            <span>Pontos</span>
-            <strong id="score">0</strong>
+            <div class="sensor-panel" aria-live="polite">
+              <div>
+                <span class="eyebrow">Sensor de corpo</span>
+                <strong id="sensorStatus">Inicie a camera e fique de corpo inteiro.</strong>
+              </div>
+              <div class="confidence-wrap" aria-label="Confianca do sensor">
+                <span id="confidenceText">0%</span>
+                <div class="confidence-track"><div id="confidenceFill"></div></div>
+              </div>
+              <button id="calibrateButton" type="button">Recalibrar corpo</button>
+            </div>
           </div>
-          <div>
-            <span>Moedas</span>
-            <strong id="coins">0</strong>
-          </div>
-          <div>
-            <span>Precisao</span>
-            <strong id="accuracy">0%</strong>
-          </div>
-          <div>
-            <span>Acertos</span>
-            <strong id="reps">0</strong>
-          </div>
-        </section>
 
-        <section class="challenge-board" aria-label="Desafios entre amigos">
-          <div class="section-head">
-            <span class="eyebrow">Desafios entre amigos</span>
-            <strong>Ranking semanal</strong>
-          </div>
-          <ol id="rankingList" class="ranking-list"></ol>
-        </section>
+          <aside class="hud-column">
+            <section class="movement-panel">
+              <div class="movement-top">
+                <div id="movementIcon" class="movement-icon">1</div>
+                <div>
+                  <span class="eyebrow">Movimento atual</span>
+                  <h2 id="exerciseName">Marcha leve</h2>
+                  <p id="exerciseHint">Levante um joelho por vez, sem pressa.</p>
+                </div>
+              </div>
 
-        <section class="shop" aria-label="Loja de recompensas">
-          <div class="section-head">
-            <span class="eyebrow">Evolucao</span>
-            <strong>Roupas, habilidades e desafios</strong>
-          </div>
-          <div id="shopList" class="shop-list"></div>
+              <div class="mission-row">
+                <div class="timer-wrap" aria-label="Tempo restante">
+                  <svg viewBox="0 0 120 120" role="img">
+                    <circle class="timer-bg" cx="60" cy="60" r="52"></circle>
+                    <circle id="timerRing" class="timer-ring" cx="60" cy="60" r="52"></circle>
+                  </svg>
+                  <span id="timerText">60</span>
+                </div>
+                <div class="feedback-panel">
+                  <strong id="positiveFeedback">Vamos calibrar primeiro.</strong>
+                  <span id="modeDescription">Movimentos simples, ritmo mais lento e feedback positivo.</span>
+                </div>
+              </div>
+
+              <div class="controls">
+                <button id="startButton" type="button">Iniciar camera</button>
+                <button id="audioButton" type="button">Ouvir instrucao</button>
+                <button id="nextButton" type="button">Proximo movimento</button>
+              </div>
+            </section>
+
+            <section class="avatar-zone" aria-label="Avatar do jogador">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">Avatar</span>
+                  <strong id="avatarLevel">Nivel 1 - Comecando</strong>
+                </div>
+                <span id="weeklyRank" class="rank-pill">Sala: --</span>
+              </div>
+              <canvas id="avatarCanvas" width="420" height="520" aria-label="Personagem humano completo"></canvas>
+              <div class="level-track" aria-label="Progresso do nivel"><div id="levelFill"></div></div>
+              <div id="skinStrip" class="skin-strip"></div>
+            </section>
+
+            <section class="score-grid" aria-label="Pontuacao">
+              <div><span>Pontos</span><strong id="score">0</strong></div>
+              <div><span>Moedas</span><strong id="coins">0</strong></div>
+              <div><span>Confianca</span><strong id="accuracy">0%</strong></div>
+              <div><span>Acertos reais</span><strong id="reps">0</strong></div>
+            </section>
+
+            <section class="leaderboard" aria-label="Ranking da sala">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">Colegas</span>
+                  <strong>Nome e pontos</strong>
+                </div>
+                <span id="onlineState" class="online-pill">offline</span>
+              </div>
+              <ol id="rankingList" class="ranking-list"></ol>
+            </section>
+
+            <section class="shop" aria-label="Loja de recompensas">
+              <div class="section-head">
+                <div>
+                  <span class="eyebrow">Evolucao</span>
+                  <strong>Roupas e habilidades</strong>
+                </div>
+              </div>
+              <div id="shopList" class="shop-list"></div>
+            </section>
+          </aside>
         </section>
-      </aside>
+      </section>
     </main>
 
     <div id="toastHost" class="toast-host" aria-live="polite"></div>
